@@ -14,6 +14,7 @@ import csv
 
 #email tools 
 import smtplib, ssl
+from email.mime.text import MIMEText
 
 def createWebDriver():
     print("generating options")
@@ -61,7 +62,7 @@ def sendEmail(body):
         lines = f.readlines()
         username = lines[0].strip()
         password = lines[1].strip()
-        print(f"USERNAME={username}, PASSWORD={password}")
+
         port = 465  # For SSL
 
         # Create a secure SSL context
@@ -69,20 +70,30 @@ def sendEmail(body):
 
         with smtplib.SMTP_SSL("smtp.gmail.com", port, context=context) as server:
             server.login(username, password)
-            message = body
-            server.sendmail(username, username, message)
+
+            msg = MIMEText(body)
+            msg['Subject'] = body.title()
+            msg['From'] = username
+            msg['To'] = username
+            server.sendmail(username, username, msg.as_string())
 
 if __name__ == "__main__":
-    # sendEmail("hello")
+    driver = createWebDriver()
+    bottle_list_output = ''
+
     with open('bottle_list.csv','r', newline='') as csvfile:
-        bottle_list = csv.DictReader(csvfile)
+        bottle_list_input = csv.DictReader(csvfile)
+        
+        fieldnames = ['title','stock']
+        bottle_list_output = fieldnames[0] + ',' + fieldnames[1] + '\n'
+        
+        for row in bottle_list_input:
+            stockStatus = 'In Stock' if isInStock(row[fieldnames[0]]) else 'Out of Stock'
+            if (row['stock'] == 'Out of Stock') and (stockStatus == 'In Stock'):
+                sendEmail(row['title'] + " is In Stock!")
+            bottle_list_output = bottle_list_output + row['title'] + ',' + stockStatus + '\n'
 
-        driver = createWebDriver()
-
-        for row in bottle_list:
-            stockStatus = "In Stock" if isInStock(row['title']) else "Out of Stock"
-            print(row['title'].title() + ": " + stockStatus)
-
+    print(bottle_list_output)
 
     driver.close() # closing the webdriver
     driver.quit()
