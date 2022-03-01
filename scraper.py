@@ -65,13 +65,13 @@ def isInStock(bottle_name):
         return False
 
 def writeStocktoFile(bottle_stock):
-    f = open(CSV_FILENAME, "w")
-    f.write(bottle_stock)
-    f.close()
+    with open(os.path.join(__location__, CSV_FILENAME),'w') as f:
+        f.write(bottle_stock)
+        f.close()
 
 
 def sendEmail(body):
-    with open(SECRETS_FILENAME) as f:
+    with open(os.path.join(__location__, SECRETS_FILENAME),'r') as f:
         lines = f.readlines()
         username = lines[0].strip()
         password = lines[1].strip()
@@ -94,7 +94,9 @@ if __name__ == "__main__":
     driver = createWebDriver()
     bottle_list_output = ''
 
-    with open(CSV_FILENAME,'r', newline='') as csvfile:
+    __location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+    with open(os.path.join(__location__, CSV_FILENAME),'r', newline='') as csvfile:
         bottle_list_input = csv.DictReader(csvfile)
         
         fieldnames = ['title','stock']
@@ -112,7 +114,6 @@ if __name__ == "__main__":
 
     driver.close() # closing the webdriver
     driver.quit()
-
 
 
 
