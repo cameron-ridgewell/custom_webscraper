@@ -41,7 +41,8 @@ def createWebDriver():
     return webdriver.Chrome(options=chrome_options)
 
 def isInStock(bottle_name):
-    url = URL_PREFIX + urllib.parse.quote(bottle_name) + URL_SUFFIX
+    url = URL_PREFIX + '\"' + urllib.parse.quote(bottle_name) + '\"' +  URL_SUFFIX
+    # print(url)
     print("Fetching " + bottle_name + "... ", end='')
     driver.get(url)
 
@@ -111,6 +112,7 @@ if __name__ == "__main__":
 
     driver.close() # closing the webdriver
     driver.quit()
+
 
 
 
