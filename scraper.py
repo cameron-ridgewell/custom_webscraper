@@ -19,7 +19,8 @@ from email.mime.text import MIMEText
 CSV_FILENAME = 'bottle_list.csv'
 SECRETS_FILENAME = 'secrets.txt'
 URL_PREFIX = 'https://www.abc.virginia.gov/products/all-products#q='
-URL_SUFFIX = '&sort=relevancy&numberOfResults=12&f:Views=[49]'
+STORE_NUMBER = '49'
+URL_SUFFIX = '&sort=relevancy&numberOfResults=12&f:Views=[' + STORE_NUMBER + ']'
 
 def createWebDriver():
     chrome_options = Options()
