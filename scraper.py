@@ -89,7 +89,6 @@ def writeStocktoFile(bottle_stock):
 
 
 def sendEmail(body):
-    return
     with open(os.path.join(__location__, SECRETS_FILENAME),'r') as f:
         lines = f.readlines()
         username = lines[0].strip()
