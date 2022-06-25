@@ -1,16 +1,18 @@
-#### This program scrapes naukri.com's page and gives our result as a 
-#### list of all the job_profiles which are currently present there. 
-  
+#scp ./scraper.py pi@pi:/home/pi/custom_webscraper/scraper.py
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By as By
+from selenium.common.exceptions import NoSuchElementException
+
 
 import os  # I think it's better to use subprocess for this. but quick code for example
 import time
 import urllib.parse
 import csv
+import re
 
 #email tools 
 import smtplib, ssl
@@ -18,9 +20,10 @@ from email.mime.text import MIMEText
 
 CSV_FILENAME = 'bottle_list.csv'
 SECRETS_FILENAME = 'secrets.txt'
-URL_PREFIX = 'https://www.abc.virginia.gov/products/all-products#q='
-STORE_NUMBER = '49'
-URL_SUFFIX = '&sort=relevancy&numberOfResults=12&f:Views=[' + STORE_NUMBER + ']'
+ANGELSENVY_URL = 'https://www.abc.virginia.gov/products/bourbon/angels-envy-port-barrel-bourbon?productSize=0'
+HIGHWEST_URL = 'https://www.abc.virginia.gov/products/rye/high-west-whiskey-double-rye?productSize=0'
+LOGIN_URL = 'https://www.abc.virginia.gov/sso/gateway/login.do'
+
 
 def createWebDriver():
     chrome_options = Options()
@@ -35,34 +38,48 @@ def createWebDriver():
     chrome_options.add_argument("--disable-browser-side-navigation"); #https:#stackoverflow.com/a/49123152/1689770
     chrome_options.add_argument("--disable-gpu"); #https:#stackoverflow.com/questions/51959986/how-to-solve-selenium-chromedriver-timed-out-receiving-message-from-renderer-exc
 
+    # chrome_options.add_argument("--disable-extensions"); # disabling extensions
+    # chrome_options.add_argument("--no-sandbox"); # Bypass OS security model
+    # chrome_options.add_argument("--remote-debugging-port=9222")  # this
+
+
     status = os.system('systemctl is-active --quiet chromium-driver')
     # print(status)
 
     print("Setting up options")
     return webdriver.Chrome(options=chrome_options)
 
-def isInStock(bottle_name):
-    url = URL_PREFIX + '\"' + urllib.parse.quote(bottle_name) + '\"' +  URL_SUFFIX
-    # print(url)
+def login(driver):
+    __location__ = os.path.realpath(
+    os.path.join(os.getcwd(), os.path.dirname(__file__)))
+    with open(os.path.join(__location__, SECRETS_FILENAME),'r') as f:
+        lines = f.readlines()
+        username = lines[2].strip()
+        password = lines[3].strip()
+
+        print("Logging in")
+        driver.get(LOGIN_URL)
+        # print(driver.page_source)
+        username_box = driver.find_element("id","login_loginId")
+        password_box = driver.find_element("id","login_password")
+
+        username_box.send_keys(username)
+        password_box.send_keys(password)
+
+        login_button = driver.find_element("id","login__execute")
+        login_button.submit()
+
+def isInStock(bottle_name, bottle_url):
     print("Fetching " + bottle_name + "... ", end='')
-    driver.get(url)
+    driver.get(bottle_url)
 
-    # this is just to ensure that the page is loaded
-    time.sleep(5) 
-
-    html = driver.page_source
-
-    # this renders the JS code and stores all
-    # of the information in static HTML code.
-
-    soup = BeautifulSoup(html, "html.parser")
-
-    search_results = soup.find_all('div',class_="col-sm-12 col-xs-8 pull-right-sm product-header")
-    
-    print("Done")
-    if len(search_results) > 0:
-        return True
-    else:
+    xpath = "//td[@data-title='Inventory']"
+    try:
+        inventory_count = driver.find_element(By.XPATH,xpath)
+        print(re.search(r'\d+', inventory_count.text).group(0))
+        return int(re.search(r'\d+', inventory_count.text).group(0)) > 0
+    except NoSuchElementException:
+        print("0\n" + bottle_name + " is not held in inventory")
         return False
 
 def writeStocktoFile(bottle_stock):
@@ -72,6 +89,7 @@ def writeStocktoFile(bottle_stock):
 
 
 def sendEmail(body):
+    return
     with open(os.path.join(__location__, SECRETS_FILENAME),'r') as f:
         lines = f.readlines()
         username = lines[0].strip()
@@ -92,29 +110,34 @@ def sendEmail(body):
             server.sendmail(username, username, msg.as_string())
 
 if __name__ == "__main__":
-    driver = createWebDriver()
-    bottle_list_output = ''
+    try:
+        driver = createWebDriver()
+        bottle_list_output = ''
 
-    __location__ = os.path.realpath(
-    os.path.join(os.getcwd(), os.path.dirname(__file__)))
-    with open(os.path.join(__location__, CSV_FILENAME),'r', newline='') as csvfile:
-        bottle_list_input = csv.DictReader(csvfile)
-        
-        fieldnames = ['title','stock']
-        bottle_list_output = fieldnames[0] + ',' + fieldnames[1] + '\n'
-        
-        # Only send emails for things that were previously out of Stock
-        for row in bottle_list_input:
-            stockStatus = 'In Stock' if isInStock(row[fieldnames[0]]) else 'Out of Stock'
-            if (row['stock'] == 'Out of Stock') and (stockStatus == 'In Stock'):
-                sendEmail(row['title'] + " is In Stock!")
-                pass
-            bottle_list_output = bottle_list_output + row['title'] + ',' + stockStatus + '\n'
-        #Updae CSV file
-        writeStocktoFile(bottle_list_output)
+        login(driver)
 
-    driver.close() # closing the webdriver
-    driver.quit()
+        __location__ = os.path.realpath(
+        os.path.join(os.getcwd(), os.path.dirname(__file__)))
+        with open(os.path.join(__location__, CSV_FILENAME),'r', newline='') as csvfile:
+            bottle_list_input = csv.DictReader(csvfile)
+            
+            fieldnames = ['title','stock','url']
+            bottle_list_output = fieldnames[0] + ',' + fieldnames[1] + ',' + fieldnames[2] + '\n'
+            
+            # Only send emails for things that were previously out of Stock
+            for row in bottle_list_input:
+                bottle_url = row['url']
+
+                stockStatus = 'In Stock' if isInStock(row['title'],row['url']) else 'Out of Stock'
+                if (row['stock'] == 'Out of Stock') and (stockStatus == 'In Stock'):
+                    sendEmail(row['title'] + " is In Stock!")
+                bottle_list_output = bottle_list_output + row['title'] + ',' + stockStatus + ',' + bottle_url + '\n'
+            
+            #Update CSV file
+            writeStocktoFile(bottle_list_output)
+    finally:
+        driver.close() # closing the webdriver
+        driver.quit()
 
 
 
