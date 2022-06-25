@@ -1,11 +1,9 @@
-title,stock
-Eagle Rare,Out of Stock
-high west double rye,In Stock
-Blanton's,Out of Stock
-Sazerac Rye 6 Yr,Out of Stock
-Buffalo Trace Bourbon,Out of Stock
-Stagg Jr.,Out of Stock
-George T. Stagg Bourbon,Out of Stock
-Chartreuse Green,Out of Stock
-Angel's Envy Port Barrel Bourbon,Out of Stock
-
+title,stock,url
+Eagle Rare,Out of Stock,https://www.abc.virginia.gov/products/bourbon/eagle-rare-10-year-bourbon?productSize=1
+high west double rye,In Stock,https://www.abc.virginia.gov/products/rye/high-west-whiskey-double-rye?productSize=0
+Blanton's,Out of Stock,https://www.abc.virginia.gov/products/bourbon/blantons-single-barrel-bourbon?productSize=1
+Sazerac Rye 6 Yr,Out of Stock,https://abc.virginia.gov/products/rye/sazerac-rye-6-year?productSize=0
+Buffalo Trace Bourbon,Out of Stock,https://www.abc.virginia.gov/products/bourbon/buffalo-trace-bourbon?productSize=0
+George T. Stagg Bourbon,Out of Stock,https://www.abc.virginia.gov/products/bourbon/george-t-stagg-bourbon?productSize=0
+Chartreuse Green,Out of Stock,https://www.abc.virginia.gov/products/cordials/chartreuse-green?productSize=0
+Angel's Envy Port Barrel Bourbon,In Stock,https://www.abc.virginia.gov/products/bourbon/angels-envy-port-barrel-bourbon?productSize=0
